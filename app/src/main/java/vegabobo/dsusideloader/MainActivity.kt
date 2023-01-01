@@ -47,40 +47,16 @@ class MainActivity : ComponentActivity(), Shizuku.OnRequestPermissionResultListe
     //
 
     val userServiceArgs =
-        Shizuku.UserServiceArgs(
-            ComponentName(BuildConfig.APPLICATION_ID, PrivilegedService::class.java.name)
-        )
-            .daemon(false)
-            .processNameSuffix("service")
-            .debuggable(BuildConfig.DEBUG)
-            .version(BuildConfig.VERSION_CODE)
-
-    private val SHIZUKU_REQUEST_CODE = 1000
-    private val REQUEST_PERMISSION_RESULT_LISTENER = this::onRequestPermissionResult
-
-    private fun addShizukuListeners() {
-        Shizuku.addBinderReceivedListenerSticky(BINDER_RECEIVED_LISTENER)
-        Shizuku.addRequestPermissionResultListener(REQUEST_PERMISSION_RESULT_LISTENER)
-    }
-
-    private fun removeShizukuListeners() {
-        Shizuku.removeRequestPermissionResultListener(REQUEST_PERMISSION_RESULT_LISTENER)
-        Shizuku.removeBinderReceivedListener(BINDER_RECEIVED_LISTENER)
-    }
-
-    private val BINDER_RECEIVED_LISTENER = Shizuku.OnBinderReceivedListener {
-        if (!OperationModeUtils.isShizukuPermissionGranted(this)) {
-            askShizukuPermission()
-            return@OnBinderReceivedListener
+        Bundle().apply {
+            putString(Shizuku.BinderProvider.KEY_BINDER_PROVIDER_AUTHORITY, "vegabobo.dsusideloader")
+            putString(Shizuku.BinderProvider.KEY_BINDER_PROVIDER_CLASS, PrivilegedService::class.java.name)
         }
+
+    private val REQUEST_PERMISSION_RESULT_LISTENER = object : Shizuku.OnRequestPermissionResultListener
         bindShizuku()
     }
 
-    private fun askShizukuPermission() {
-        if (Shizuku.isPreV11() || Shizuku.getVersion() < 11) {
-            requestPermissions(arrayOf(ShizukuProvider.PERMISSION), SHIZUKU_REQUEST_CODE)
-        } else {
-            Shizuku.requestPermission(SHIZUKU_REQUEST_CODE)
+    private fun addShizukuListeners() { Shizuku.addRequestPermissionResultListener(REQUEST_PERMISSION_RESULT_LISTENER) }
         }
     }
 
@@ -163,8 +139,8 @@ class MainActivity : ComponentActivity(), Shizuku.OnRequestPermissionResultListe
                 applicationContext.unbindService(PrivilegedProvider.connection)
 
             OperationMode.SHIZUKU -> {
-                removeShizukuListeners()
-                Shizuku.unbindUserService(userServiceArgs, PrivilegedProvider.connection, true)
+                Shizuku.unbindUserService(PrivilegedProvider.connection)
+                Shizuku.removeRequestPermissionResultListener(REQUEST_PERMISSION_RESULT_LISTENER)
             }
 
             else -> {}
